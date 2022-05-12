@@ -1,7 +1,5 @@
 # Vector Class
-### Objektinis programavimas
-#
-#
+
 
 ## _std::vector_ ir mano sukurto _Vectors_ užpildymas _int_ elementais naudojant _push_back()_ funkciją
 
