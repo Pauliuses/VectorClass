@@ -1,68 +1,92 @@
 # Vector Class
 
 
-## _std::vector_ ir mano sukurto _Vectors_ užpildymas _int_ elementais naudojant _push_back()_ funkciją
+## _std::vector_ ir mano sukurto _Vector_ užpildymas _int_ elementais naudojant _push_back()_ funkciją
 
-| **Kiekis** | **std::vector** | **Vectors** |
+| **Kiekis** | **std::vector** | **Vector** |
 |------------|-----------------|-------------|
-| **10000** | **0.0009697** | **0.0009973**|
-| **100000** | **0.0019844** | 0.0020218 |
-| **1000000** | **0.0179338** | **0.0209437** |
-| **10000000** | **0.16554** | **0.201517** |
-| **100000000** | **1.66784** | **1.83895** |
-| **1000000000** | **15.8316** | **17.0923** |
+| **100000** | **0.0019953** | **0.0019952** |
+| **1000000** | **0.0189438** | **0.0109698** |
+| **10000000** | **0.1605** | **0.105948** |
+| **100000000** | **1.54952** | **0.961934** |
+| **1000000000** | **15.2216** | **9.30689** |
 
 ## Atminties perskirtymai užpildant 100000000 elementų:
-|**std::vector** ir **Vectors**| **27 kartus įvyksta konteinerių atminties perskirstymai** |
+|**std::vector** ir **Vector**| **28 kartus įvyksta konteinerių atminties perskirstymai** |
 |-|-|
 
 ## Funkcijų aprašymai: 
-### Sunaikina ir atlaisvina vieta
+### 1. Prideda elementą prie vektoriaus pabaigos
 ```
-template <class T> void Vectors<T>::destroy(){
-        if(data){
-            iterator it = avail;
-            while(it != data)
-                alloc.destroy(--it);
-                alloc.deallocate(data, limit - data);
+template<typename Type>
+void Vector<Type>::pushBack(const Type& element)
+{
+    if (count_ == capacity_) {
+        if (capacity_ == maxSize()) {
+            throw "LengthError";
         }
-        data = limit = avail = nullptr;
+        reserve(capacity_ + 1);
+    }
+
+    data_[count_] = element;
+    ++count_;
 }
 ```
-### Išskiria vietos j-i elementams ir nukopijuoja elementus iš intervalo
+### 2. Iš vektoriaus pabaigos pašalina elementą
 ```
-template <class T> void Vectors<T>::create(const_iterator i, const_iterator j){
-        data = alloc.allocate(j - i);
-        limit = avail = uninitialized_copy(i, j, data);
-        actualsize = (j - 1);
+template<typename Type>
+void Vector<Type>::popBack()
+{
+    if (count_ == 0) {
+        throw "Err";
+    }
+
+    data_[count_ - 1].~Type();
+    --count_;
 }
 ```
-Padvigubina vietos, išskiria vietą ir perkopijuoja egzistuojančius elementus bei resetina rodykles į naujai išskirtą vietą
+### 3. Išvalo
 ```
-template <class T> void Vectors<T>::grow(){
-        size_type new_size = std::max(2 * (limit - data), ptrdiff_t(1));
-        iterator new_data = alloc.allocate(new_size);
-        iterator new_avail = std::uninitialized_copy(data, avail, new_data);
-        destroy();
-        data = new_data;
-        avail = new_avail;
-        limit = data + new_size;
+template<typename Type>
+void Vector<Type>::clear()
+{
+    if (data_ != nullptr) {
+        delete[] data_;
+        data_ = nullptr;
+        count_ = 0;
+        capacity_ = 0;
+    }
 }
 ```
-Pointina į išskirtą bet neinicializuotą vietą
+### 4. Pakeičia vektoriaus dydį
 ```
-template <class T> void Vectors<T>::append(const T& val){
-        alloc.construct(avail++, val);
+template<typename Type>
+void Vector<Type>::resize(std::size_t count)
+{
+    if (count <= count_) {
+        while (count_ > count) {
+            popBack();
+            -- count_;
+        }
+        return;
+    }
+
+    reserve(count);
+
+    while(count_ < count) {
+        data_[count_] = Type();
+        ++count_;
+    }
 }
 ```
-Patikrina ar yra už ribų
+### 5. Pasiekia paskutini vektoriaus elementą
 ```
-template <class T> T Vectors<T>::at(size_type i){
-	if(!(data[i])){
-		throw new std::domain_error("Uz ribu!");
-		return nullptr;
-	} else {
-		return data[i];
-	}
+template<typename Type>
+const Type& Vector<Type>::back() const
+{
+    if(count_ > 0) {
+        return data_[count_ - 1];
+    }
+    throw "Err";
 }
 ```
