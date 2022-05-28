@@ -5,11 +5,11 @@
 
 | **Kiekis** | **std::vector** | **Vector** |
 |------------|-----------------|-------------|
-| **100000** | **0.0019953** | **0.0019952** |
-| **1000000** | **0.0189438** | **0.0109698** |
-| **10000000** | **0.1605** | **0.105948** |
-| **100000000** | **1.54952** | **0.961934** |
-| **1000000000** | **15.2216** | **9.30689** |
+| **100000** | **0.0019934** | **0.0019946** |
+| **1000000** | **0.0179456** | **0.0199455** |
+| **10000000** | **0.172693** | **0.207444** |
+| **100000000** | **1.60069** | **1.730106** |
+| **1000000000** | **15.6731** | **16.2667** |
 
 ## Atminties perskirtymai užpildant 100000000 elementų:
 |**std::vector** ir **Vector**| **28 kartus įvyksta konteinerių atminties perskirstymai** |
@@ -18,75 +18,63 @@
 ## Funkcijų aprašymai: 
 ### 1. Prideda elementą prie vektoriaus pabaigos
 ```
-template<typename Type>
-void Vector<Type>::pushBack(const Type& element)
+template <typename T>
+void Vector<T>::push_back(const T &val)
 {
-    if (count_ == capacity_) {
-        if (capacity_ == maxSize()) {
-            throw "LengthError";
-        }
-        reserve(capacity_ + 1);
-    }
-
-    data_[count_] = element;
-    ++count_;
+    if (avail == limit)
+        Grow();
+    Unchecked_append(val);
 }
 ```
 ### 2. Iš vektoriaus pabaigos pašalina elementą
 ```
-template<typename Type>
-void Vector<Type>::popBack()
+template <typename T>
+void Vector<T>::pop_back()
 {
-    if (count_ == 0) {
-        throw "Err";
-    }
-
-    data_[count_ - 1].~Type();
-    --count_;
+    alloc.destroy(--avail);
 }
 ```
-### 3. Išvalo
+### 3. Ištrina elementą
 ```
-template<typename Type>
-void Vector<Type>::clear()
+template <typename T>
+void Vector<T>::erase(Vector<T>::const_iterator position)
 {
-    if (data_ != nullptr) {
-        delete[] data_;
-        data_ = nullptr;
-        count_ = 0;
-        capacity_ = 0;
-    }
+    if (position < data || position > avail)
+        throw std::out_of_range{"Out of bounds."};
+    iterator new_avail = std::move(position + 1, avail, position);
+    alloc.destroy(new_avail);
+    avail = new_avail;
 }
 ```
 ### 4. Pakeičia vektoriaus dydį
 ```
-template<typename Type>
-void Vector<Type>::resize(std::size_t count)
+template <typename T>
+void Vector<T>::resize(size_t n, const T &value)
 {
-    if (count <= count_) {
-        while (count_ > count) {
-            popBack();
-            -- count_;
+    if (n > capacity())
+    {
+        Grow();
+        resize(n, value);
+    }
+    else if (n > size())
+    {
+        avail += (n - size());
+
+        for (size_t i = size(); i < n; i++)
+        {
+            data[i] = value;
         }
-        return;
     }
-
-    reserve(count);
-
-    while(count_ < count) {
-        data_[count_] = Type();
-        ++count_;
-    }
+    else
+        resize(n);
 }
 ```
-### 5. Pasiekia paskutini vektoriaus elementą
+### 5. Sumažina dydį
 ```
-template<typename Type>
-const Type& Vector<Type>::back() const
+template <typename T>
+void Vector<T>::shrink_to_fit()
 {
-    if(count_ > 0) {
-        return data_[count_ - 1];
-    }
-    throw "Err";
+    if (avail < limit)
+        limit = avail;
 }
 ```
